@@ -18,5 +18,7 @@ tmp/
 .metadata
 .project
 
-# Starter project files
+# project files
 bot-token.txt
+channels.txt
+deploy.sh

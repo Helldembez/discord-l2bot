@@ -1,6 +1,7 @@
 package com.helldembez.discordl2bot.services
 
 import arrow.core.getOrNone
+import com.helldembez.discordl2bot.BOSS_NAMES
 import com.helldembez.discordl2bot.BOSS_NAMES.SIEGE
 import com.helldembez.discordl2bot.BOSS_NAMES.TERRITORYWAR
 import com.helldembez.discordl2bot.BOT_TOKEN
@@ -33,19 +34,21 @@ class ChannelService(private val scope: CoroutineScope) {
     init {
         channelsFile.createNewFile()
         channelsFile.forEachLine { line ->
-            val channelId = ChannelId(line)
-            channels[channelId] = ChannelData(channelId, ChannelClient(channelId.toString(), client))
+            val splittedLine = line.split(";")
+            val channelId = ChannelId(splittedLine.first())
+            val roleId = RoleId(splittedLine.last())
+            channels[channelId] = ChannelData(channelId, roleId, ChannelClient(channelId.toString(), client))
         }
     }
 
-    fun addChannel(channelId: ChannelId) {
-        channels[channelId] = ChannelData(channelId, ChannelClient(channelId.toString(), client))
+    fun addChannel(channelId: ChannelId, roleId: RoleId) {
+        channels[channelId] = ChannelData(channelId, roleId, ChannelClient(channelId.toString(), client))
         val newLine = if (channelsFile.length() > 0) {
             "\n"
         } else {
             ""
         }
-        channelsFile.appendText("$newLine$channelId")
+        channelsFile.appendText("$newLine$channelId;$roleId")
     }
 
     fun removeChannel(channelId: ChannelId) {
@@ -59,7 +62,7 @@ class ChannelService(private val scope: CoroutineScope) {
 
     fun scheduleJobForAllChannels(bossData: BossData) = channels.forEach { (channelId, channelData) ->
         bossData.time.onSome { time ->
-            addJobForChannel(channelId, createJobForChannel(channelData.channelClient, bossData.name, time))
+            addJobForChannel(channelId, createJobForChannel(channelData, bossData.name, time))
         }
     }
 
@@ -67,7 +70,7 @@ class ChannelService(private val scope: CoroutineScope) {
         channels.getOrNone(channelId).onSome { channelData ->
             bossesData.forEach {
                 it.time.onSome { time ->
-                    addJobForChannel(channelId, createJobForChannel(channelData.channelClient, it.name, time))
+                    addJobForChannel(channelId, createJobForChannel(channelData, it.name, time))
                 }
             }
         }
@@ -78,20 +81,30 @@ class ChannelService(private val scope: CoroutineScope) {
         jobs[channelId] = channelJobs
     }
 
-    private fun createJobForChannel(channel: ChannelClient, name: String, time: ZonedDateTime) = scope.launch {
-        log.info { "Scheduling $name for ${channel.channelId} on $time" }
+    private fun createJobForChannel(channelData: ChannelData, name: BOSS_NAMES, time: ZonedDateTime) = scope.launch {
+        log.info { "Scheduling $name for ${channelData.channelId} on $time" }
         val now = ZonedDateTime.now(ZONE)
-        if (now.plusHours(1).isBefore(time)) {
+        if (now.plusHours(1).isBefore(now.plusMinutes(2))) {
             val reminderTime = time.minusHours(1)
             delay(reminderTime.toInstant().toEpochMilli() - now.toInstant().toEpochMilli())
         }
         val relativeTime = timestamp(time.toInstant().toKotlinInstant(), RELATIVE)
         val dateTime = timestamp(time.toInstant().toKotlinInstant(), LONG_DATE_TIME)
-        val word = if (name in arrayOf(TERRITORYWAR(), SIEGE())) { "starting" } else { "spawning" }
-        channel.sendMessage("$name is $word $relativeTime at $dateTime")
+        val word = if (name() in arrayOf(TERRITORYWAR(), SIEGE())) {
+            "starting"
+        } else {
+            "spawning"
+        }
+        channelData.channelClient.sendMessage(
+            "${name()} is $word $relativeTime at $dateTime <@&${channelData.roleId}>",
+            embeds = name.toEmbeds()
+        )
         delay(time.toInstant().toEpochMilli() - Instant.now(CLOCK).toEpochMilli())
-        channel.sendMessage("$name is $word right now!")
-        log.info { "$name $word for ${channel.channelId}" }
+        channelData.channelClient.sendMessage(
+            "${name()} is $word right now! <@&${channelData.roleId}>",
+            embeds = name.toEmbeds()
+        )
+        log.info { "$name $word for ${channelData.channelId}" }
     }
 
     private fun cancelJobsForChannel(channelId: ChannelId) {
@@ -108,7 +121,12 @@ data class ChannelId(val channelId: String) {
     override fun toString() = channelId
 }
 
+data class RoleId(val roleId: String) {
+    override fun toString() = roleId
+}
+
 data class ChannelData(
     val channelId: ChannelId,
+    val roleId: RoleId,
     val channelClient: ChannelClient,
 )

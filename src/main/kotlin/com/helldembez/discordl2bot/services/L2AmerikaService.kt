@@ -37,7 +37,7 @@ class L2AmerikaService(
     scope: CoroutineScope,
     channelService: ChannelService
 ) {
-    val bossesData = mutableMapOf<String, BossData>()
+    val bossesData = mutableMapOf<BOSS_NAMES, BossData>()
 
     init {
         initBossesData()
@@ -51,7 +51,7 @@ class L2AmerikaService(
         val rbs = getRbs()
         rbs.filter { it.containsBoss(enumValues<BOSS_NAMES>().map(BOSS_NAMES::invoke)) }.forEach { row ->
             val columns = row.getElementsByTag(TD())
-            val name = columns[0].text()
+            val name = BOSS_NAMES.fromBossName(columns[0].text())
             val time = columns[3].text()
             val parsedTime = parseDate(time)
             bossesData[name] = BossData(name, parsedTime)
@@ -62,9 +62,9 @@ class L2AmerikaService(
         val now = ZonedDateTime.now(ZONE)
         val weekNumber = currentWeekNumber(now)
 
-        bossesData[LINDVIOR()] = BossData(LINDVIOR(), nextLindvior(now, weekNumber))
-        bossesData[TERRITORYWAR()] = BossData(TERRITORYWAR(), nextTw(now, weekNumber))
-        bossesData[SIEGE()] = BossData(SIEGE(), nextSiege(now, weekNumber))
+        bossesData[LINDVIOR] = BossData(LINDVIOR, nextLindvior(now, weekNumber))
+        bossesData[TERRITORYWAR] = BossData(TERRITORYWAR, nextTw(now, weekNumber))
+        bossesData[SIEGE] = BossData(SIEGE, nextSiege(now, weekNumber))
     }
 
     private fun pollAliveBosses(scope: CoroutineScope, channelService: ChannelService) = scope.future {
@@ -76,10 +76,10 @@ class L2AmerikaService(
                 }
             if (filteredBossesData.isNotEmpty()) {
                 val rbs = getRbs()
-                rbs.filter { element -> element.containsBoss(filteredBossesData.map { it.value.name }) }
+                rbs.filter { element -> element.containsBoss(filteredBossesData.map { it.value.name() }) }
                     .forEach { row ->
                         val columns = row.getElementsByTag(TD())
-                        val name = columns[0].text()
+                        val name = BOSS_NAMES.fromBossName(columns[0].text())
                         val time = columns[3].text()
                         val parsedTime = parseDate(time)
                         parsedTime.onSome {
@@ -90,14 +90,14 @@ class L2AmerikaService(
                     }
 
                 val weekNumber = currentWeekNumber(now)
-                if (filteredBossesData.containsKey(LINDVIOR())) {
-                    bossesData[LINDVIOR()] = BossData(LINDVIOR(), nextLindvior(now, weekNumber))
+                if (filteredBossesData.containsKey(LINDVIOR)) {
+                    bossesData[LINDVIOR] = BossData(LINDVIOR, nextLindvior(now, weekNumber))
                 }
-                if (filteredBossesData.containsKey(TERRITORYWAR())) {
-                    bossesData[TERRITORYWAR()] = BossData(TERRITORYWAR(), nextTw(now, weekNumber))
+                if (filteredBossesData.containsKey(TERRITORYWAR)) {
+                    bossesData[TERRITORYWAR] = BossData(TERRITORYWAR, nextTw(now, weekNumber))
                 }
-                if (filteredBossesData.containsKey(SIEGE())) {
-                    bossesData[SIEGE()] = BossData(SIEGE(), nextSiege(now, weekNumber))
+                if (filteredBossesData.containsKey(SIEGE)) {
+                    bossesData[SIEGE] = BossData(SIEGE, nextSiege(now, weekNumber))
                 }
             }
             delay(1800000)
@@ -110,19 +110,26 @@ class L2AmerikaService(
         return tables[6].getElementsByTag(TR()) + tables[7].getElementsByTag(TR())
     }
 
-    fun bossTimesToString() = bossesData.values.toSet().sort().joinToString(separator = "\n") { (name, time) ->
-        val deadOrAlive = time.fold(
-            { "is ALIVE" },
-            {
-                val instant = it.toInstant().toKotlinInstant()
-                val relativeTime = timestamp(instant, RELATIVE)
-                val dateTime = timestamp(instant, LONG_DATE_TIME)
-                val word = if (name in arrayOf(TERRITORYWAR(), SIEGE())) { "starts" } else { "spawns" }
-                "$word $relativeTime at $dateTime"
+    fun bossTimesToString() =
+        bossesData.values.toSet().sort().joinToString(separator = "\n") { (name, time) -> bossTimeString(name(), time) }
+
+    fun bossTimeToString() =
+        bossesData.values.toSet().sort().first().let { (name, time) -> bossTimeString(name(), time) }
+
+    private fun bossTimeString(name: String, time: Option<ZonedDateTime>) = time.fold(
+        { "is ALIVE" },
+        {
+            val instant = it.toInstant().toKotlinInstant()
+            val relativeTime = timestamp(instant, RELATIVE)
+            val dateTime = timestamp(instant, LONG_DATE_TIME)
+            val word = if (name in arrayOf(TERRITORYWAR(), SIEGE())) {
+                "starts"
+            } else {
+                "spawns"
             }
-        )
-        "$name $deadOrAlive"
-    }
+            "$word $relativeTime at $dateTime"
+        }
+    ).let { "$name $it" }
 
 
     private fun parseDate(input: String): Option<ZonedDateTime> = if (input == "-") {
@@ -141,9 +148,9 @@ class L2AmerikaService(
     private fun nextLindvior(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
         val nextSunday =
             now.with(DayOfWeek.SUNDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
-        return if (weekNumber % 2 != 0  ) {
+        return if (weekNumber % 2 != 0) {
             nextSunday.plusWeeks(1).some()
-        } else if(nextSunday.isBefore(now)) {
+        } else if (nextSunday.isBefore(now)) {
             nextSunday.plusWeeks(2).some()
         } else {
             nextSunday.some()
@@ -155,7 +162,7 @@ class L2AmerikaService(
             now.with(DayOfWeek.SATURDAY).withHour(23).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
         return if (weekNumber % 2 == 0 || nextSaturday.isBefore(now)) {
             nextSaturday.plusWeeks(1).some()
-        }else if(nextSaturday.isBefore(now)) {
+        } else if (nextSaturday.isBefore(now)) {
             nextSaturday.plusWeeks(2).some()
         } else {
             nextSaturday.some()
@@ -167,7 +174,7 @@ class L2AmerikaService(
             now.with(DayOfWeek.SUNDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
         return if (weekNumber % 2 == 0 || nextSunday.isBefore(now)) {
             nextSunday.plusWeeks(1).some()
-        }else if(nextSunday.isBefore(now)) {
+        } else if (nextSunday.isBefore(now)) {
             nextSunday.plusWeeks(2).some()
         } else {
             nextSunday.some()
@@ -176,8 +183,7 @@ class L2AmerikaService(
 
 }
 
-// TODO: use boss pictures
 data class BossData(
-    val name: String,
+    val name: BOSS_NAMES,
     val time: Option<ZonedDateTime>,
 )

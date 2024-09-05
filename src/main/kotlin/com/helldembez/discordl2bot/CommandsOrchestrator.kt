@@ -3,6 +3,7 @@ package com.helldembez.discordl2bot
 import com.helldembez.discordl2bot.services.ChannelId
 import com.helldembez.discordl2bot.services.ChannelService
 import com.helldembez.discordl2bot.services.L2AmerikaService
+import com.helldembez.discordl2bot.services.RoleId
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 
@@ -12,10 +13,12 @@ class CommandsOrchestrator(scope: CoroutineScope) {
     private val channelService = ChannelService(scope)
     private val l2AmerikaService = L2AmerikaService(scope, channelService)
 
-    fun next() = "_ _\n${l2AmerikaService.bossTimesToString()}"
-    fun register(channelId: ChannelId) =
+    fun nextBoss() = l2AmerikaService.bossesData.values.toSet().sort().first().name
+    fun next() = "_ _\n${l2AmerikaService.bossTimeToString()}"
+    fun nextAll() = "_ _\n${l2AmerikaService.bossTimesToString()}"
+    fun registerChannel(channelId: ChannelId, roleId: RoleId) =
         if (!channelService.exists(channelId)) {
-            channelService.addChannel(channelId)
+            channelService.addChannel(channelId, roleId)
             channelService.scheduleJobsForChannel(channelId, l2AmerikaService.bossesData.values.toSet())
             log.info { "Registered channel $channelId" }
             true
@@ -24,10 +27,8 @@ class CommandsOrchestrator(scope: CoroutineScope) {
             false
         }
 
-    fun unRegister(channelId: ChannelId) {
+    fun unRegisterChannel(channelId: ChannelId) {
         channelService.removeChannel(channelId)
         log.info { "Removed channel $channelId" }
     }
-
-
 }
