@@ -41,7 +41,6 @@ class L2AmerikaService(
 
     init {
         initBossesData()
-        channelService.scheduleJobsForAllChannels(bossesData.values.toSet())
         initEvents()
         channelService.scheduleJobsForAllChannels(bossesData.values.toSet())
         pollAliveBosses(scope, channelService)

@@ -84,7 +84,7 @@ class ChannelService(private val scope: CoroutineScope) {
     private fun createJobForChannel(channelData: ChannelData, name: BOSS_NAMES, time: ZonedDateTime) = scope.launch {
         log.info { "Scheduling $name for ${channelData.channelId} on $time" }
         val now = ZonedDateTime.now(ZONE)
-        if (now.plusHours(1).isBefore(now.plusMinutes(2))) {
+        if (now.plusHours(1).isBefore(time)) {
             val reminderTime = time.minusHours(1)
             delay(reminderTime.toInstant().toEpochMilli() - now.toInstant().toEpochMilli())
         }
