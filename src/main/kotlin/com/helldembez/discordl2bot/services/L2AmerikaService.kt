@@ -6,12 +6,9 @@ import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.none
 import arrow.core.some
-import com.helldembez.discordl2bot.BOSS_NAMES
+import com.helldembez.discordl2bot.*
 import com.helldembez.discordl2bot.BOSS_NAMES.*
 import com.helldembez.discordl2bot.HTML_TAGS.*
-import com.helldembez.discordl2bot.ZONE
-import com.helldembez.discordl2bot.containsBoss
-import com.helldembez.discordl2bot.sort
 import com.jessecorbett.diskord.util.TimestampFormat.LONG_DATE_TIME
 import com.jessecorbett.diskord.util.TimestampFormat.RELATIVE
 import com.jessecorbett.diskord.util.timestamp
@@ -34,16 +31,17 @@ private val FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 private val L2AMERIKA_ZONE = ZoneId.of("America/Sao_Paulo")
 
 class L2AmerikaService(
-    scope: CoroutineScope,
-    channelService: ChannelService
+    private val scope: CoroutineScope,
+    private val channelService: ChannelService
 ) {
     val bossesData = mutableMapOf<BOSS_NAMES, BossData>()
 
-    init {
+    fun init(): L2AmerikaService {
         initBossesData()
         initEvents()
         channelService.scheduleJobsForAllChannels(bossesData.values.toSet())
         pollAliveBosses(scope, channelService)
+        return this
     }
 
     private fun initBossesData() {
@@ -66,7 +64,7 @@ class L2AmerikaService(
         bossesData[SIEGE] = BossData(SIEGE, nextSiege(now, weekNumber))
     }
 
-    private fun pollAliveBosses(scope: CoroutineScope, channelService: ChannelService) = scope.future {
+    fun pollAliveBosses(scope: CoroutineScope, channelService: ChannelService) = scope.future {
         while (true) {
             val now = ZonedDateTime.now(ZONE)
             val filteredBossesData =
@@ -141,10 +139,10 @@ class L2AmerikaService(
         }
     }
 
-    private fun currentWeekNumber(now: ZonedDateTime) =
-        now.get(WeekFields.of(Locale.getDefault()).weekOfWeekBasedYear())
+    fun currentWeekNumber(now: ZonedDateTime) =
+        now.get(WeekFields.of(LOCALE).weekOfWeekBasedYear())
 
-    private fun nextLindvior(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
+    fun nextLindvior(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
         val nextSunday =
             now.with(DayOfWeek.SUNDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
         return if (weekNumber % 2 != 0) {
@@ -156,7 +154,7 @@ class L2AmerikaService(
         }
     }
 
-    private fun nextTw(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
+    fun nextTw(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
         val nextSaturday =
             now.with(DayOfWeek.SATURDAY).withHour(23).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
         return if (weekNumber % 2 == 0 || nextSaturday.isBefore(now)) {
@@ -168,7 +166,7 @@ class L2AmerikaService(
         }
     }
 
-    private fun nextSiege(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
+    fun nextSiege(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
         val nextSunday =
             now.with(DayOfWeek.SUNDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
         return if (weekNumber % 2 == 0 || nextSunday.isBefore(now)) {

@@ -6,6 +6,7 @@ import com.jessecorbett.diskord.api.channel.Embed
 import com.jessecorbett.diskord.api.channel.EmbedImage
 import java.time.Clock
 import java.time.ZoneId
+import java.util.*
 
 val BOT_TOKEN = try {
     System.getenv("BOT_TOKEN")
@@ -15,6 +16,7 @@ val BOT_TOKEN = try {
     )
 }
 val ZONE = ZoneId.of("Europe/Amsterdam")
+val LOCALE = Locale("nl", "NL")
 val CLOCK = Clock.system(ZONE)
 
 enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = null) {
@@ -45,6 +47,10 @@ enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = nu
     LINDVIOR(
         "Lindvior",
         "https://cdn.discordapp.com/attachments/1239639690596978788/1280982159229980775/Lindvior.jpg?ex=66dab7da&is=66d9665a&hm=9dd15acf2519c3a09b7f2b3885285b1a6215be326cb97a490532a6fbf5285809&"
+    ),
+    ORFEN(
+      "Orfen",
+        "https://cdn.discordapp.com/attachments/1239639690596978788/1286000835997859840/Orfen.jpg?ex=66ec511c&is=66eaff9c&hm=e30caf81d36d5d2c15e72cafdab0fbeb92c0c8bf6c99414fd19ff2e814ab6d3b&"
     ),
     TERRITORYWAR("Territory War"),
     SIEGE("Siege");
