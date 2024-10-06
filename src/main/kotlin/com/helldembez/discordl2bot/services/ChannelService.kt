@@ -6,7 +6,10 @@ import com.helldembez.discordl2bot.BOSS_NAMES.SIEGE
 import com.helldembez.discordl2bot.BOSS_NAMES.TERRITORYWAR
 import com.helldembez.discordl2bot.BOT_TOKEN
 import com.helldembez.discordl2bot.CLOCK
+import com.helldembez.discordl2bot.EventType
 import com.helldembez.discordl2bot.ZONE
+import com.helldembez.discordl2bot.events
+import com.helldembez.discordl2bot.timeUntil
 import com.jessecorbett.diskord.api.channel.ChannelClient
 import com.jessecorbett.diskord.internal.client.RestClient
 import com.jessecorbett.diskord.util.TimestampFormat.LONG_DATE_TIME
@@ -27,47 +30,102 @@ private val client = RestClient.default(BOT_TOKEN)
 private val log = KotlinLogging.logger {}
 
 class ChannelService(private val scope: CoroutineScope) {
-    private val channelsFile: File = File(File(System.getenv("CHANNELS_DIRECTORY")), "channels.txt")
-    private val channels = mutableMapOf<ChannelId, ChannelData>()
+    private val rbChannelsFile: File = File(File(System.getenv("CHANNELS_DIRECTORY")), "rb-channels.txt")
+    private val eventsChannelsFile: File = File(File(System.getenv("CHANNELS_DIRECTORY")), "events-channels.txt")
+    private val rbChannels = mutableMapOf<ChannelId, ChannelData>()
+    private val eventsChannels = mutableMapOf<ChannelId, ChannelData>()
     private val jobs: MutableMap<ChannelId, List<Job>> = mutableMapOf()
 
     init {
-        channelsFile.createNewFile()
-        channelsFile.forEachLine { line ->
+        initFile(rbChannels, rbChannelsFile)
+        initFile(eventsChannels, eventsChannelsFile)
+        startEventAnnouncements()
+    }
+
+    private fun initFile(channelMap: MutableMap<ChannelId, ChannelData>, channelFile: File) {
+        channelFile.createNewFile()
+        channelFile.forEachLine { line ->
             val splittedLine = line.split(";")
             val channelId = ChannelId(splittedLine.first())
             val roleId = RoleId(splittedLine.last())
-            channels[channelId] = ChannelData(channelId, roleId, ChannelClient(channelId.toString(), client))
+            channelMap[channelId] = ChannelData(channelId, roleId, ChannelClient(channelId.toString(), client))
         }
     }
 
-    fun addChannel(channelId: ChannelId, roleId: RoleId) {
-        channels[channelId] = ChannelData(channelId, roleId, ChannelClient(channelId.toString(), client))
-        val newLine = if (channelsFile.length() > 0) {
+    private fun startEventAnnouncements() {
+        scope.launch {
+            while (true) {
+                val now = ZonedDateTime.now(ZONE)
+                val futureTasks = events.map {
+                    it.registerTime.atDate(now.toLocalDate()).atZone(ZONE) to it
+                }.filter { (time, _) -> time.isAfter(now) }
+                val tasksToExecute = futureTasks.ifEmpty {
+                    events.map {
+                        it.registerTime.atDate(now.toLocalDate().plusDays(1)).atZone(ZONE) to it
+                    }
+                }
+
+                for ((time, task) in tasksToExecute) {
+                    val delayTime = time.timeUntil()
+                    println("Next task scheduled at $time, waiting for $delayTime ms")
+                    delay(delayTime)
+                    println("Executing task '${task.type}' at $time")
+                    eventsChannels.forEach { (_, data) ->
+                        val unknownMsg = if (task.type == EventType.Unknown) {
+                            "Let me know which event this was. ${task.registerTime.hour}"
+                        } else {
+                            ""
+                        }
+                        data.channelClient.sendMessage(
+                            "Event ${task.type} starting in around 10 minutes <@&${data.roleId}> $unknownMsg"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun addChannel(
+        channelId: ChannelId,
+        roleId: RoleId,
+        channelMap: MutableMap<ChannelId, ChannelData>,
+        channelFile: File
+    ) {
+        channelMap[channelId] = ChannelData(channelId, roleId, ChannelClient(channelId.toString(), client))
+        val newLine = if (channelFile.length() > 0) {
             "\n"
         } else {
             ""
         }
-        channelsFile.appendText("$newLine$channelId;$roleId")
+        channelFile.appendText("$newLine$channelId;$roleId")
     }
 
-    fun removeChannel(channelId: ChannelId) {
-        channels.remove(channelId)
+    private fun removeChannel(channelId: ChannelId, channelMap: MutableMap<ChannelId, ChannelData>, channelFile: File) {
+        channelMap.remove(channelId)
         cancelJobsForChannel(channelId)
-        val filteredLines = channelsFile.readLines().filterNot { it.contains(channelId.toString()) }
-        channelsFile.writeText(filteredLines.joinToString("\n"))
+        val filteredLines = channelFile.readLines().filterNot { it.contains(channelId.toString()) }
+        channelFile.writeText(filteredLines.joinToString("\n"))
     }
+
+    fun addRbChannel(channelId: ChannelId, roleId: RoleId) = addChannel(channelId, roleId, rbChannels, rbChannelsFile)
+
+    fun removeRbChannel(channelId: ChannelId) = removeChannel(channelId, rbChannels, rbChannelsFile)
+
+    fun addEventsChannel(channelId: ChannelId, roleId: RoleId) =
+        addChannel(channelId, roleId, eventsChannels, eventsChannelsFile)
+
+    fun removeEventsChannel(channelId: ChannelId) = removeChannel(channelId, eventsChannels, eventsChannelsFile)
 
     fun scheduleJobsForAllChannels(bossesData: Set<BossData>) = bossesData.forEach(::scheduleJobForAllChannels)
 
-    fun scheduleJobForAllChannels(bossData: BossData) = channels.forEach { (channelId, channelData) ->
+    fun scheduleJobForAllChannels(bossData: BossData) = rbChannels.forEach { (channelId, channelData) ->
         bossData.time.onSome { time ->
             addJobForChannel(channelId, createJobForChannel(channelData, bossData.name, time))
         }
     }
 
     fun scheduleJobsForChannel(channelId: ChannelId, bossesData: Set<BossData>) {
-        channels.getOrNone(channelId).onSome { channelData ->
+        rbChannels.getOrNone(channelId).onSome { channelData ->
             bossesData.forEach {
                 it.time.onSome { time ->
                     addJobForChannel(channelId, createJobForChannel(channelData, it.name, time))
@@ -114,7 +172,8 @@ class ChannelService(private val scope: CoroutineScope) {
         jobs.remove(channelId)
     }
 
-    fun exists(channelId: ChannelId): Boolean = channels.containsKey(channelId)
+    fun existsRbs(channelId: ChannelId): Boolean = rbChannels.containsKey(channelId)
+    fun existsEvents(channelId: ChannelId): Boolean = eventsChannels.containsKey(channelId)
 }
 
 data class ChannelId(val channelId: String) {

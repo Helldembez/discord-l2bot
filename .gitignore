@@ -21,4 +21,6 @@ tmp/
 # project files
 bot-token.txt
 channels.txt
+rb-channels.txt
+events-channels.txt
 deploy.sh

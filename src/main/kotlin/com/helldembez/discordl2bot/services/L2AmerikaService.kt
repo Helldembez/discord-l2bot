@@ -6,9 +6,13 @@ import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.none
 import arrow.core.some
-import com.helldembez.discordl2bot.*
+import com.helldembez.discordl2bot.BOSS_NAMES
 import com.helldembez.discordl2bot.BOSS_NAMES.*
 import com.helldembez.discordl2bot.HTML_TAGS.*
+import com.helldembez.discordl2bot.LOCALE
+import com.helldembez.discordl2bot.ZONE
+import com.helldembez.discordl2bot.containsBoss
+import com.helldembez.discordl2bot.sort
 import com.jessecorbett.diskord.util.TimestampFormat.LONG_DATE_TIME
 import com.jessecorbett.diskord.util.TimestampFormat.RELATIVE
 import com.jessecorbett.diskord.util.timestamp
@@ -25,7 +29,6 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.time.temporal.WeekFields
-import java.util.*
 
 private val FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 private val L2AMERIKA_ZONE = ZoneId.of("America/Sao_Paulo")
@@ -83,6 +86,9 @@ class L2AmerikaService(
                             val bossData = BossData(name, parsedTime)
                             bossesData.replace(name, bossData)
                             channelService.scheduleJobForAllChannels(bossData)
+                        }.onNone {
+                            val bossData = BossData(name, none())
+                            bossesData.replace(name, bossData)
                         }
                     }
 
