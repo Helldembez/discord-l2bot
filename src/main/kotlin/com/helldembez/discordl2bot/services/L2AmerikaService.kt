@@ -16,6 +16,7 @@ import com.helldembez.discordl2bot.sort
 import com.jessecorbett.diskord.util.TimestampFormat.LONG_DATE_TIME
 import com.jessecorbett.diskord.util.TimestampFormat.RELATIVE
 import com.jessecorbett.diskord.util.timestamp
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.future
@@ -32,6 +33,9 @@ import java.time.temporal.WeekFields
 
 private val FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 private val L2AMERIKA_ZONE = ZoneId.of("America/Sao_Paulo")
+private val UTC = ZoneId.of("UTC")
+
+private val log = KotlinLogging.logger {}
 
 class L2AmerikaService(
     private val scope: CoroutineScope,
@@ -59,7 +63,7 @@ class L2AmerikaService(
     }
 
     private fun initEvents() {
-        val now = ZonedDateTime.now(ZONE)
+        val now = ZonedDateTime.now(UTC)
         val weekNumber = currentWeekNumber(now)
 
         bossesData[LINDVIOR] = BossData(LINDVIOR, nextLindvior(now, weekNumber))
@@ -69,7 +73,7 @@ class L2AmerikaService(
 
     fun pollAliveBosses(scope: CoroutineScope, channelService: ChannelService) = scope.future {
         while (true) {
-            val now = ZonedDateTime.now(ZONE)
+            val now = ZonedDateTime.now(UTC)
             val filteredBossesData =
                 bossesData.filter { (_, it) ->
                     it.time.isNone() || it.time.map { time -> time.isBefore(now) }.getOrElse { false }
@@ -149,39 +153,55 @@ class L2AmerikaService(
         now.get(WeekFields.of(LOCALE).weekOfWeekBasedYear())
 
     fun nextLindvior(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
+        log.info { "**** Scheduling Lindvior ****" }
+        log.info { "* now: $now current weeknumber: $weekNumber *" }
+
         val nextSunday =
-            now.with(DayOfWeek.SUNDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
-        return if (weekNumber % 2 != 0) {
+            now.with(DayOfWeek.SUNDAY).withHour(19).withMinute(0).withSecond(0).withNano(0)
+        val result = if (weekNumber % 2 != 0) {
             nextSunday.plusWeeks(1).some()
         } else if (nextSunday.isBefore(now)) {
             nextSunday.plusWeeks(2).some()
         } else {
             nextSunday.some()
         }
+        log.info { "* NextSunday: $nextSunday, result: $result *" }
+        log.info { "*****************************" }
+        return result
     }
 
     fun nextTw(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
+        log.info { "**** Scheduling TW ****" }
+        log.info { "* now: $now current weeknumber: $weekNumber *" }
         val nextSaturday =
-            now.with(DayOfWeek.SATURDAY).withHour(23).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
-        return if (weekNumber % 2 == 0 || nextSaturday.isBefore(now)) {
+            now.with(DayOfWeek.SATURDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
+        val result = if (weekNumber % 2 == 0 || nextSaturday.isBefore(now)) {
             nextSaturday.plusWeeks(1).some()
         } else if (nextSaturday.isBefore(now)) {
             nextSaturday.plusWeeks(2).some()
         } else {
             nextSaturday.some()
         }
+        log.info { "* NextSunday: $nextSaturday, result: $result *" }
+        log.info { "*****************************" }
+        return result
     }
 
     fun nextSiege(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
+        log.info { "**** Scheduling Siege ****" }
+        log.info { "* now: $now current weeknumber: $weekNumber *" }
         val nextSunday =
-            now.with(DayOfWeek.SUNDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
-        return if (weekNumber % 2 == 0 || nextSunday.isBefore(now)) {
+            now.with(DayOfWeek.SUNDAY).withHour(19).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
+        val result = if (weekNumber % 2 == 0 || nextSunday.isBefore(now)) {
             nextSunday.plusWeeks(1).some()
         } else if (nextSunday.isBefore(now)) {
             nextSunday.plusWeeks(2).some()
         } else {
             nextSunday.some()
         }
+        log.info { "* NextSunday: $nextSunday, result: $result *" }
+        log.info { "*****************************" }
+        return result
     }
 
 }
