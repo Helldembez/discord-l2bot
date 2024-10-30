@@ -17,6 +17,7 @@ val BOT_TOKEN = try {
     )
 }
 val ZONE = ZoneId.of("Europe/Amsterdam")
+val UTC = ZoneId.of("UTC")
 val LOCALE = Locale("nl", "NL")
 val CLOCK = Clock.system(ZONE)
 
@@ -96,27 +97,27 @@ data class EventData(
 )
 
 val events = setOf(
-    EventData(LocalTime.of(0, 55, 59), EventType.BattleField), // BF
-    EventData(LocalTime.of(1, 57, 30), EventType.TvT), // TvT
-    EventData(LocalTime.of(3, 1, 1), EventType.Domination),// DOM
-    EventData(LocalTime.of(4, 3, 32), EventType.CTF),// ctf
-    EventData(LocalTime.of(5, 6, 3), EventType.DeathMatch), // dm
-    EventData(LocalTime.of(6, 8, 34), EventType.MassDomination), // mssdom
-    EventData(LocalTime.of(7, 37, 5), EventType.MassDomination), // -
-    EventData(LocalTime.of(8, 13, 36), EventType.BattleField), //bf
+    EventData(LocalTime.of(0, 55, 59), EventType.Domination),
+    EventData(LocalTime.of(1, 57, 30), EventType.CTF),
+    EventData(LocalTime.of(3, 1, 1), EventType.DeathMatch),
+    EventData(LocalTime.of(4, 3, 32), EventType.MassDomination),
+    EventData(LocalTime.of(5, 6, 3), EventType.MassDomination),
+    EventData(LocalTime.of(6, 8, 34), EventType.BattleField),
+    EventData(LocalTime.of(7, 37, 5), EventType.TvT),
+    EventData(LocalTime.of(8, 13, 36), EventType.Domination),
     EventData(LocalTime.of(9, 16, 7), EventType.TvT),
     EventData(LocalTime.of(10, 18, 38), EventType.Domination),
-    EventData(LocalTime.of(11, 23, 16), EventType.TvT),
-    EventData(LocalTime.of(12, 25, 47), EventType.Domination),
-    EventData(LocalTime.of(13, 28, 18), EventType.CTF),
-    EventData(LocalTime.of(14, 30, 49), EventType.DeathMatch),
-    EventData(LocalTime.of(15, 33, 20), EventType.MassDomination), // MASS_DOM
-    EventData(LocalTime.of(16, 35, 51), EventType.HuntingGrounds), // -
-    EventData(LocalTime.of(17, 38, 22), EventType.BattleField),
-    EventData(LocalTime.of(18, 40, 53), EventType.TvT), // TvT
-    EventData(LocalTime.of(19, 43, 24), EventType.Domination), // DOM
-    EventData(LocalTime.of(20, 45, 55), EventType.CTF),
-    EventData(LocalTime.of(21, 48, 26), EventType.DeathMatch),
-    EventData(LocalTime.of(22, 50, 57), EventType.MassDomination),
-    EventData(LocalTime.of(23, 52, 28), EventType.HuntingGrounds), // -
+    EventData(LocalTime.of(11, 23, 16), EventType.CTF),
+    EventData(LocalTime.of(12, 25, 47), EventType.DeathMatch),
+    EventData(LocalTime.of(13, 28, 18), EventType.MassDomination),
+    EventData(LocalTime.of(14, 30, 49), EventType.HuntingGrounds),
+    EventData(LocalTime.of(15, 33, 20), EventType.BattleField),
+    EventData(LocalTime.of(16, 35, 51), EventType.TvT),
+    EventData(LocalTime.of(17, 38, 22), EventType.Domination),
+    EventData(LocalTime.of(18, 40, 53), EventType.CTF),
+    EventData(LocalTime.of(19, 43, 24), EventType.DeathMatch),
+    EventData(LocalTime.of(20, 45, 55), EventType.MassDomination),
+    EventData(LocalTime.of(21, 48, 26), EventType.HuntingGrounds),
+    EventData(LocalTime.of(22, 50, 57), EventType.BattleField),
+    EventData(LocalTime.of(23, 52, 28), EventType.TvT),
 )

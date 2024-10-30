@@ -7,6 +7,7 @@ import com.helldembez.discordl2bot.BOSS_NAMES.TERRITORYWAR
 import com.helldembez.discordl2bot.BOT_TOKEN
 import com.helldembez.discordl2bot.CLOCK
 import com.helldembez.discordl2bot.EventType
+import com.helldembez.discordl2bot.UTC
 import com.helldembez.discordl2bot.ZONE
 import com.helldembez.discordl2bot.events
 import com.helldembez.discordl2bot.timeUntil
@@ -55,13 +56,13 @@ class ChannelService(private val scope: CoroutineScope) {
     private fun startEventAnnouncements() {
         scope.launch {
             while (true) {
-                val now = ZonedDateTime.now(ZONE)
+                val now = ZonedDateTime.now(UTC)
                 val futureTasks = events.map {
-                    it.registerTime.atDate(now.toLocalDate()).atZone(ZONE) to it
+                    it.registerTime.atDate(now.toLocalDate()).atZone(UTC) to it
                 }.filter { (time, _) -> time.isAfter(now) }
                 val tasksToExecute = futureTasks.ifEmpty {
                     events.map {
-                        it.registerTime.atDate(now.toLocalDate().plusDays(1)).atZone(ZONE) to it
+                        it.registerTime.atDate(now.toLocalDate().plusDays(1)).atZone(UTC) to it
                     }
                 }
 

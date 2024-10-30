@@ -10,6 +10,7 @@ import com.helldembez.discordl2bot.BOSS_NAMES
 import com.helldembez.discordl2bot.BOSS_NAMES.*
 import com.helldembez.discordl2bot.HTML_TAGS.*
 import com.helldembez.discordl2bot.LOCALE
+import com.helldembez.discordl2bot.UTC
 import com.helldembez.discordl2bot.ZONE
 import com.helldembez.discordl2bot.containsBoss
 import com.helldembez.discordl2bot.sort
@@ -33,7 +34,6 @@ import java.time.temporal.WeekFields
 
 private val FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 private val L2AMERIKA_ZONE = ZoneId.of("America/Sao_Paulo")
-private val UTC = ZoneId.of("UTC")
 
 private val log = KotlinLogging.logger {}
 
