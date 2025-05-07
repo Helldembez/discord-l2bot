@@ -21,7 +21,7 @@ val UTC = ZoneId.of("UTC")
 val LOCALE = Locale("nl", "NL")
 val CLOCK = Clock.system(ZONE)
 
-enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = null) {
+enum class AMERIKA_BOSS_NAMES(private val boss: String, private val imgUrl: String? = null) {
     VALAKAS(
         "Valakas",
         "https://cdn.discordapp.com/attachments/1239639690596978788/1280982157770362892/Valakas.jpg?ex=66dab7d9&is=66d96659&hm=26a11ae763414ddcddcaff43f3e2a86986e3a43abf9b9a2ac2cd6e96bf9b1b80&"
@@ -53,6 +53,39 @@ enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = nu
     ORFEN(
         "Orfen",
         "https://cdn.discordapp.com/attachments/1239639690596978788/1286000835997859840/Orfen.jpg?ex=66ec511c&is=66eaff9c&hm=e30caf81d36d5d2c15e72cafdab0fbeb92c0c8bf6c99414fd19ff2e814ab6d3b&"
+    ),
+    TERRITORYWAR("Territory War"),
+    SIEGE("Siege");
+
+    operator fun invoke(): String {
+        return boss
+    }
+
+    companion object {
+        fun fromBossName(name: String) = entries.first { it.boss == name }
+    }
+
+    fun toEmbeds() =
+        this.imgUrl.toOption().map { Embed(image = EmbedImage(it, imageHeight = 200, imageWidth = 200)) }
+            .map(::arrayOf).getOrElse(::emptyArray)
+}
+
+enum class EXILIUM_BOSS_NAMES(private val boss: String, private val imgUrl: String? = null) {
+    VALAKAS(
+        "Valakas",
+        "https://cdn.discordapp.com/attachments/1239639690596978788/1280982157770362892/Valakas.jpg?ex=66dab7d9&is=66d96659&hm=26a11ae763414ddcddcaff43f3e2a86986e3a43abf9b9a2ac2cd6e96bf9b1b80&"
+    ),
+    BAIUM(
+        "Baium",
+        "https://cdn.discordapp.com/attachments/1239639690596978788/1280982158529531934/Baium.jpg?ex=66dab7da&is=66d9665a&hm=e4105bf42a9cfcaf5296ff6bb11d6bc9a5039ad2058390ea0d43b23b9d8c0b27&"
+    ),
+    ANTHARAS(
+        "Antharas",
+        "https://cdn.discordapp.com/attachments/1239639690596978788/1280982158122422334/Antharas.jpg?ex=66dab7d9&is=66d96659&hm=8ea059867355da0c1f3067ffc6fb16c595e4d4c573387e9c2530617ec17eebf6&"
+    ),
+    FAFURION(
+        "Fafurion",
+        "https://cdn.discordapp.com/attachments/1054413339406635068/1327629185614741564/Untitled.jpg?ex=6783c288&is=67827108&hm=0c6258083b3d064272698e744f71bb0bd0773b2137f8cb69b43c77682fdcdd05&"
     ),
     TERRITORYWAR("Territory War"),
     SIEGE("Siege");

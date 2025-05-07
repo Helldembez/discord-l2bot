@@ -1,9 +1,9 @@
 package com.helldembez.discordl2bot.services
 
 import arrow.core.getOrNone
-import com.helldembez.discordl2bot.BOSS_NAMES
-import com.helldembez.discordl2bot.BOSS_NAMES.SIEGE
-import com.helldembez.discordl2bot.BOSS_NAMES.TERRITORYWAR
+import com.helldembez.discordl2bot.AMERIKA_BOSS_NAMES
+import com.helldembez.discordl2bot.AMERIKA_BOSS_NAMES.SIEGE
+import com.helldembez.discordl2bot.AMERIKA_BOSS_NAMES.TERRITORYWAR
 import com.helldembez.discordl2bot.BOT_TOKEN
 import com.helldembez.discordl2bot.CLOCK
 import com.helldembez.discordl2bot.EventType
@@ -117,15 +117,15 @@ class ChannelService(private val scope: CoroutineScope) {
 
     fun removeEventsChannel(channelId: ChannelId) = removeChannel(channelId, eventsChannels, eventsChannelsFile)
 
-    fun scheduleJobsForAllChannels(bossesData: Set<BossData>) = bossesData.forEach(::scheduleJobForAllChannels)
+    fun scheduleJobsForAllChannels(bossesData: Set<AmerikaBossData>) = bossesData.forEach(::scheduleJobForAllChannels)
 
-    fun scheduleJobForAllChannels(bossData: BossData) = rbChannels.forEach { (channelId, channelData) ->
+    fun scheduleJobForAllChannels(bossData: AmerikaBossData) = rbChannels.forEach { (channelId, channelData) ->
         bossData.time.onSome { time ->
             addJobForChannel(channelId, createJobForChannel(channelData, bossData.name, time))
         }
     }
 
-    fun scheduleJobsForChannel(channelId: ChannelId, bossesData: Set<BossData>) {
+    fun scheduleJobsForChannel(channelId: ChannelId, bossesData: Set<AmerikaBossData>) {
         rbChannels.getOrNone(channelId).onSome { channelData ->
             bossesData.forEach {
                 it.time.onSome { time ->
@@ -140,7 +140,7 @@ class ChannelService(private val scope: CoroutineScope) {
         jobs[channelId] = channelJobs
     }
 
-    private fun createJobForChannel(channelData: ChannelData, name: BOSS_NAMES, time: ZonedDateTime) = scope.launch {
+    private fun createJobForChannel(channelData: ChannelData, name: AMERIKA_BOSS_NAMES, time: ZonedDateTime) = scope.launch {
         log.info { "Scheduling $name for ${channelData.channelId} on $time" }
         val now = ZonedDateTime.now(ZONE)
         if (now.plusHours(1).isBefore(time)) {
