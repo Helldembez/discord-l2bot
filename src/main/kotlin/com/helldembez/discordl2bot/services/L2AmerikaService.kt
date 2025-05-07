@@ -112,9 +112,9 @@ class L2AmerikaService(
     }
 
     private fun getRbs(): List<Element> {
-        val doc = Jsoup.connect("https://www.l2amerika.com/?page=rankings").get()
+        val doc = Jsoup.connect("https://www.l2amerika.com/?page=boss-status").get()
         val tables = doc.body().getElementsByTag(TABLE())
-        return tables[6].getElementsByTag(TR()) + tables[7].getElementsByTag(TR())
+        return tables[0].getElementsByTag(TR()) + tables[1].getElementsByTag(TR())
     }
 
     fun bossTimesToString() =
