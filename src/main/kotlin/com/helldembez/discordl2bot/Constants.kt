@@ -54,6 +54,10 @@ enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = nu
         "Orfen",
         "https://cdn.discordapp.com/attachments/1239639690596978788/1286000835997859840/Orfen.jpg?ex=66ec511c&is=66eaff9c&hm=e30caf81d36d5d2c15e72cafdab0fbeb92c0c8bf6c99414fd19ff2e814ab6d3b&"
     ),
+    DARION(
+        "Darion",
+        "https://static.l2off.ge/NPCs/25603.png"
+    ),
     TERRITORYWAR("Territory War"),
     SIEGE("Siege");
 
