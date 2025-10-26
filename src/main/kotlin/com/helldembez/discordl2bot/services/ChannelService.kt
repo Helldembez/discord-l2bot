@@ -12,6 +12,9 @@ import com.helldembez.discordl2bot.ZONE
 import com.helldembez.discordl2bot.events
 import com.helldembez.discordl2bot.timeUntil
 import com.jessecorbett.diskord.api.channel.ChannelClient
+import com.jessecorbett.diskord.api.channel.Embed
+import com.jessecorbett.diskord.api.exceptions.DiscordBadPermissionsException
+import com.jessecorbett.diskord.api.exceptions.DiscordCompatibilityException
 import com.jessecorbett.diskord.internal.client.RestClient
 import com.jessecorbett.diskord.util.TimestampFormat.LONG_DATE_TIME
 import com.jessecorbett.diskord.util.TimestampFormat.RELATIVE
@@ -77,8 +80,10 @@ class ChannelService(private val scope: CoroutineScope) {
                         } else {
                             ""
                         }
-                        data.channelClient.sendMessage(
-                            "Event ${task.type} starting in around 10 minutes <@&${data.roleId}> $unknownMsg"
+                        sendMessageSafe(
+                            data.channelClient,
+                            "Event ${task.type} starting in around 10 minutes <@&${data.roleId}> $unknownMsg",
+                            emptyArray()
                         )
                     }
                 }
@@ -154,16 +159,38 @@ class ChannelService(private val scope: CoroutineScope) {
         } else {
             "spawning"
         }
-        channelData.channelClient.sendMessage(
+        sendMessageSafe(
+            channelData.channelClient,
             "${name()} is $word $relativeTime at $dateTime <@&${channelData.roleId}>",
-            embeds = name.toEmbeds()
+            name.toEmbeds()
         )
         delay(time.toInstant().toEpochMilli() - Instant.now(CLOCK).toEpochMilli())
-        channelData.channelClient.sendMessage(
+        sendMessageSafe(
+            channelData.channelClient,
             "${name()} is $word right now! <@&${channelData.roleId}>",
-            embeds = name.toEmbeds()
+            name.toEmbeds()
         )
         log.info { "$name $word for ${channelData.channelId}" }
+    }
+
+    private suspend fun sendMessageSafe(client: ChannelClient, message: String, embeds: Array<Embed>) {
+        val channelId = ChannelId(client.channelId)
+        try {
+            client.sendMessage(message, embeds = embeds)
+        } catch (e: DiscordBadPermissionsException) {
+            handle(e, channelId, embeds.isNotEmpty())
+        } catch (e: DiscordCompatibilityException) {
+            handle(e, channelId, embeds.isNotEmpty())
+        }
+    }
+
+    private fun handle(e: Exception, channelId: ChannelId, rb: Boolean) {
+        println("Catched error when sending message to channel '$channelId': ${e.message}")
+        if (rb) {
+            removeRbChannel(channelId)
+        } else {
+            removeEventsChannel(channelId)
+        }
     }
 
     private fun cancelJobsForChannel(channelId: ChannelId) {
@@ -190,3 +217,4 @@ data class ChannelData(
     val roleId: RoleId,
     val channelClient: ChannelClient,
 )
+

@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.21"
+    kotlin("jvm") version "2.1.20"
     application
 }
 
@@ -15,10 +15,10 @@ repositories {
 val mockkVersion = "1.13.12"
 
 dependencies {
-    implementation("com.jessecorbett:diskord-bot:5.4.0")
+    implementation("com.jessecorbett:diskord-bot:5.5.1")
     implementation("org.jsoup:jsoup:1.15.3")
     implementation("io.arrow-kt:arrow-core:1.2.4")
-    implementation("io.ktor:ktor-client-core-jvm:2.3.7")
+    implementation("io.ktor:ktor-client-core-jvm:2.3.13")
     implementation("io.ktor:ktor-client-apache:2.3.7")
     testImplementation(kotlin("test"))
     testImplementation("io.mockk:mockk-dsl-jvm:$mockkVersion")

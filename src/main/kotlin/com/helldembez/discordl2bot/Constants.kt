@@ -125,3 +125,5 @@ val events = setOf(
     EventData(LocalTime.of(22, 50, 57), EventType.BattleField),
     EventData(LocalTime.of(23, 52, 28), EventType.TvT),
 )
+
+val guildIds = mutableListOf<String>()
