@@ -7,7 +7,7 @@ import com.jessecorbett.diskord.api.channel.EmbedImage
 import java.time.Clock
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.*
+import java.time.ZonedDateTime
 
 val BOT_TOKEN = try {
     System.getenv("BOT_TOKEN")
@@ -18,8 +18,12 @@ val BOT_TOKEN = try {
 }
 val ZONE = ZoneId.of("Europe/Amsterdam")
 val UTC = ZoneId.of("UTC")
-val LOCALE = Locale("nl", "NL")
 val CLOCK = Clock.system(ZONE)
+val REF_LINDVIOR = ZonedDateTime.of(2025, 10, 19, 21, 0, 0, 0, ZONE)
+val REF_TERRITORYWAR = ZonedDateTime.of(2025, 10, 25, 23, 0, 0, 0, ZONE)
+val REF_SIEGE = ZonedDateTime.of(2025, 10, 26, 20, 0, 0, 0, ZONE)
+const val INTERVAL_WEEKS = 2L
+const val INTERVAL_DAYS = INTERVAL_WEEKS * 7L
 
 enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = null) {
     VALAKAS(

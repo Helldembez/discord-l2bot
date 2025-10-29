@@ -6,36 +6,39 @@ import arrow.core.Option
 import arrow.core.getOrElse
 import arrow.core.none
 import arrow.core.some
+import arrow.core.toOption
 import com.helldembez.discordl2bot.BOSS_NAMES
 import com.helldembez.discordl2bot.BOSS_NAMES.*
 import com.helldembez.discordl2bot.HTML_TAGS.*
-import com.helldembez.discordl2bot.LOCALE
+import com.helldembez.discordl2bot.INTERVAL_DAYS
+import com.helldembez.discordl2bot.INTERVAL_WEEKS
+import com.helldembez.discordl2bot.REF_LINDVIOR
+import com.helldembez.discordl2bot.REF_SIEGE
+import com.helldembez.discordl2bot.REF_TERRITORYWAR
 import com.helldembez.discordl2bot.UTC
-import com.helldembez.discordl2bot.ZONE
 import com.helldembez.discordl2bot.containsBoss
 import com.helldembez.discordl2bot.sort
 import com.jessecorbett.diskord.util.TimestampFormat.LONG_DATE_TIME
 import com.jessecorbett.diskord.util.TimestampFormat.RELATIVE
 import com.jessecorbett.diskord.util.timestamp
-import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.future.future
-import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.toKotlinInstant
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import java.time.Duration
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import java.time.temporal.WeekFields
+import kotlin.math.ceil
+import kotlin.math.max
 
 private val FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 private val L2AMERIKA_ZONE = ZoneId.of("America/Sao_Paulo")
-
-private val log = KotlinLogging.logger {}
 
 class L2AmerikaService(
     private val scope: CoroutineScope,
@@ -64,11 +67,10 @@ class L2AmerikaService(
 
     private fun initEvents() {
         val now = ZonedDateTime.now(UTC)
-        val weekNumber = currentWeekNumber(now)
 
-        bossesData[LINDVIOR] = BossData(LINDVIOR, nextLindvior(now, weekNumber))
-        bossesData[TERRITORYWAR] = BossData(TERRITORYWAR, nextTw(now, weekNumber))
-        bossesData[SIEGE] = BossData(SIEGE, nextSiege(now, weekNumber))
+        bossesData[LINDVIOR] = BossData(LINDVIOR, nextOccurrenceZoned(now, REF_LINDVIOR))
+        bossesData[TERRITORYWAR] = BossData(TERRITORYWAR, nextOccurrenceZoned(now, REF_TERRITORYWAR))
+        bossesData[SIEGE] = BossData(SIEGE, nextOccurrenceZoned(now, REF_SIEGE))
     }
 
     fun pollAliveBosses(scope: CoroutineScope, channelService: ChannelService) = scope.future {
@@ -96,15 +98,14 @@ class L2AmerikaService(
                         }
                     }
 
-                val weekNumber = currentWeekNumber(now)
                 if (filteredBossesData.containsKey(LINDVIOR)) {
-                    bossesData[LINDVIOR] = BossData(LINDVIOR, nextLindvior(now, weekNumber))
+                    bossesData[LINDVIOR] = BossData(LINDVIOR, nextOccurrenceZoned(now, REF_LINDVIOR))
                 }
                 if (filteredBossesData.containsKey(TERRITORYWAR)) {
-                    bossesData[TERRITORYWAR] = BossData(TERRITORYWAR, nextTw(now, weekNumber))
+                    bossesData[TERRITORYWAR] = BossData(TERRITORYWAR, nextOccurrenceZoned(now, REF_TERRITORYWAR))
                 }
                 if (filteredBossesData.containsKey(SIEGE)) {
-                    bossesData[SIEGE] = BossData(SIEGE, nextSiege(now, weekNumber))
+                    bossesData[SIEGE] = BossData(SIEGE, nextOccurrenceZoned(now, REF_SIEGE))
                 }
             }
             delay(1800000)
@@ -149,61 +150,16 @@ class L2AmerikaService(
         }
     }
 
-    fun currentWeekNumber(now: ZonedDateTime) =
-        now.get(WeekFields.of(LOCALE).weekOfWeekBasedYear())
-
-    fun nextLindvior(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
-        log.info { "**** Scheduling Lindvior ****" }
-        log.info { "* now: $now current weeknumber: $weekNumber *" }
-
-        val nextSunday =
-            now.with(DayOfWeek.SUNDAY).withHour(19).withMinute(0).withSecond(0).withNano(0)
-        val result = if (weekNumber % 2 != 0) {
-            nextSunday.plusWeeks(1).some()
-        } else if (nextSunday.isBefore(now)) {
-            nextSunday.plusWeeks(2).some()
-        } else {
-            nextSunday.some()
-        }
-        log.info { "* NextSunday: $nextSunday, result: $result *" }
-        log.info { "*****************************" }
-        return result
+    fun nextOccurrenceZoned(now: ZonedDateTime, refZoned: ZonedDateTime): Option<ZonedDateTime> {
+        val refUtc = refZoned.withZoneSameInstant(ZoneOffset.UTC)
+        val nowUtc = now.withZoneSameInstant(ZoneOffset.UTC)
+        val duration = Duration.between(refUtc.toInstant(), nowUtc.toInstant())
+        val periodsExact = duration.seconds.toDouble() / Duration.ofDays(INTERVAL_DAYS).seconds.toDouble()
+        val k = max(0L, ceil(periodsExact).toLong())
+        var candidateUtc = refUtc.plusWeeks(k * INTERVAL_WEEKS)
+        if (!candidateUtc.isAfter(nowUtc)) candidateUtc = candidateUtc.plusWeeks(INTERVAL_WEEKS)
+        return candidateUtc.toOption()
     }
-
-    fun nextTw(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
-        log.info { "**** Scheduling TW ****" }
-        log.info { "* now: $now current weeknumber: $weekNumber *" }
-        val nextSaturday =
-            now.with(DayOfWeek.SATURDAY).withHour(21).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
-        val result = if (weekNumber % 2 == 0 || nextSaturday.isBefore(now)) {
-            nextSaturday.plusWeeks(1).some()
-        } else if (nextSaturday.isBefore(now)) {
-            nextSaturday.plusWeeks(2).some()
-        } else {
-            nextSaturday.some()
-        }
-        log.info { "* NextSunday: $nextSaturday, result: $result *" }
-        log.info { "*****************************" }
-        return result
-    }
-
-    fun nextSiege(now: ZonedDateTime, weekNumber: Int): Option<ZonedDateTime> {
-        log.info { "**** Scheduling Siege ****" }
-        log.info { "* now: $now current weeknumber: $weekNumber *" }
-        val nextSunday =
-            now.with(DayOfWeek.SUNDAY).withHour(19).withMinute(0).withSecond(0).withNano(0).withZoneSameInstant(ZONE)
-        val result = if (weekNumber % 2 == 0 || nextSunday.isBefore(now)) {
-            nextSunday.plusWeeks(1).some()
-        } else if (nextSunday.isBefore(now)) {
-            nextSunday.plusWeeks(2).some()
-        } else {
-            nextSunday.some()
-        }
-        log.info { "* NextSunday: $nextSunday, result: $result *" }
-        log.info { "*****************************" }
-        return result
-    }
-
 }
 
 data class BossData(
