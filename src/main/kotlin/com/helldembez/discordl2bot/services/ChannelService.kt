@@ -40,7 +40,7 @@ class ChannelService(private val scope: CoroutineScope) {
     init {
         initFile(rbChannels, rbChannelsFile)
         initFile(eventsChannels, eventsChannelsFile)
-        startEventAnnouncements()
+        //startEventAnnouncements()
     }
 
     private fun initFile(channelMap: MutableMap<ChannelId, ChannelData>, channelFile: File) {
