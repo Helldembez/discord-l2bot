@@ -20,7 +20,7 @@ val ZONE = ZoneId.of("Europe/Amsterdam")
 val UTC = ZoneId.of("UTC")
 val CLOCK = Clock.system(ZONE)
 val REF_LINDVIOR = ZonedDateTime.of(2025, 10, 19, 21, 0, 0, 0, ZONE)
-val REF_TERRITORYWAR = ZonedDateTime.of(2025, 10, 25, 23, 0, 0, 0, ZONE)
+val REF_TERRITORYWAR = ZonedDateTime.of(2025, 10, 25, 21, 0, 0, 0, ZONE)
 val REF_SIEGE = ZonedDateTime.of(2025, 10, 26, 20, 0, 0, 0, ZONE)
 const val INTERVAL_WEEKS = 2L
 const val INTERVAL_DAYS = INTERVAL_WEEKS * 7L
@@ -65,6 +65,10 @@ enum class BOSS_NAMES(private val boss: String, private val imgUrl: String? = nu
     DARION(
         "Darion",
         "https://static.l2off.ge/NPCs/25603.png"
+    ),
+    FAFURION(
+        "Fafurion",
+        "https://i.pinimg.com/736x/d9/86/ae/d986ae5eea0b8442fa5a7df6cc3797be.jpg"
     ),
     TERRITORYWAR("Territory War"),
     SIEGE("Siege");

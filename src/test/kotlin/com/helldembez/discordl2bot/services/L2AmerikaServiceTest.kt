@@ -55,8 +55,8 @@ class L2AmerikaServiceTest {
 
     @Test
     fun `nextOccurrenceZoned calculates the next occurrence correctly before DST change for Territory War`() {
-        val now = ZonedDateTime.of(2025, 10, 24, 22, 0, 0, 0, UTC) // Before REF_TERRITORYWAR
-        val expected = ZonedDateTime.of(2025, 10, 25, 23, 0, 0, 0, ZONE)
+        val now = ZonedDateTime.of(2025, 10, 24, 20, 0, 0, 0, UTC) // Before REF_TERRITORYWAR
+        val expected = ZonedDateTime.of(2025, 10, 25, 21, 0, 0, 0, ZONE)
 
         val result = service.nextOccurrenceZoned(now, REF_TERRITORYWAR).getOrElse { error("Unexpected error") }
 
